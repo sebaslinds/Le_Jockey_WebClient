@@ -98,9 +98,7 @@ export function Home() {
               </motion.div>
             </div>
             
-            <p className="text-xl md:text-2xl text-zinc-400 mb-12 font-light text-center">
-              {t.heroSubtitle[language]}
-            </p>
+
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
