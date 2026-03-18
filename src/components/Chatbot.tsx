@@ -19,20 +19,21 @@ Tu peux aider avec :
 - Les informations pratiques (1309 Rue Saint-Zotique Est, Montréal, QC H2G 1G6)
 - Des recommandations de cocktails selon les goûts.
 
-Si on te demande de créer un cocktail sur mesure, pose quelques questions sur les goûts (sucré, amer, fort, fruité) et invente une recette amusante. 
-TRÈS IMPORTANT POUR LES COCKTAILS SUR MESURE : Tu DOIS toujours demander au client s'il souhaite une portion d'alcool "simple" ou "double". C'est obligatoire pour que le barman puisse préparer le verre.
+Si on te demande de créer un cocktail sur mesure, commence TOUJOURS par poser des questions sur les goûts (sucré, amer, fort, fruité) pour diriger le client vers une palette de saveurs.
+TRÈS IMPORTANT POUR LES COCKTAILS SUR MESURE : Ne demande JAMAIS la portion d'alcool ("simple" ou "double") dans la même bulle que les questions sur les goûts. Attends que le profil de saveur soit défini et que la recette soit inventée. Demande s'il souhaite une portion "simple" ou "double" à la toute fin, juste avant de confirmer la commande. C'est obligatoire pour que le barman puisse préparer le verre.
 Garde tes réponses concises et utiles.
 
 IMPORTANT: Tu peux proposer des choix à l'utilisateur sous forme de boutons pour faciliter la conversation. Pour cela, ajoute TOUJOURS à la toute fin de ton message une liste de choix au format JSON strict comme ceci:
 CHOICES: ["Option 1", "Option 2", "Option 3"]
 
-RÈGLE ABSOLUE POUR LES CHOIX : Chaque option dans la liste CHOICES ne doit JAMAIS dépasser 2 ou 3 mots. C'est très important. Par exemple, au lieu de "Je veux quelque chose de fruité", utilise "Fruité 🍓".
+RÈGLE ABSOLUE POUR LES CHOIX : Chaque option dans la liste CHOICES ne doit JAMAIS dépasser 2 ou 3 mots. C'est très important. Par exemple, au lieu de "Je veux quelque chose de fruité", utilise "Fruité 🍓". Ne propose JAMAIS de choix "Commander" ou "Payer".
 
 COMMANDE DE COCKTAIL : Si le client sélectionne ou demande un cocktail spécifique (y compris un sur mesure), tu DOIS lui demander combien d'unités il souhaite commander. Propose-lui des choix comme "1", "2", "3", "4".
 Une fois que le client a confirmé la quantité, le cocktail, et la portion d'alcool (si c'est un sur mesure), tu DOIS ajouter l'article au panier. Pour cela, ajoute TOUJOURS à la toute fin de ton message un objet JSON strict comme ceci:
 ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple"}
 (L'attribut "alcohol_portion" peut être "simple" ou "double", et ne doit être ajouté que si c'est un cocktail sur mesure).
 Assure-toi de trouver le bon "id" et "price" dans le menu fourni, ou d'inventer un id (ex: "custom-123") et un prix (ex: 16) pour un cocktail sur mesure.
+APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Autre cocktail", ou "Non, merci".
 `;
 
 export function Chatbot() {
@@ -206,7 +207,13 @@ export function Chatbot() {
                   </div>
                   {msg.choices && msg.choices.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2 max-w-[85%]">
-                      {msg.choices.map((choice, j) => (
+                      {msg.choices.filter(c => {
+                        const lowerC = c.toLowerCase();
+                        const isAfterOrder = msg.text.toLowerCase().includes('panier') || msg.text.toLowerCase().includes('commande') || msg.text.toLowerCase().includes('ajouté');
+                        if (lowerC.includes('commander') || lowerC.includes('payer')) return false;
+                        if (isAfterOrder && (lowerC.includes('événement') || lowerC.includes('evenement') || lowerC.includes('horaire'))) return false;
+                        return true;
+                      }).map((choice, j) => (
                         <button
                           key={j}
                           onClick={() => handleSend(choice)}

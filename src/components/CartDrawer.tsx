@@ -45,7 +45,7 @@ export function CartDrawer() {
           id: orderId,
           user_id: null,
           total_amount: total,
-          status: 'pending',
+          status: 'New',
           contact_email: null,
           customer_name: customerName.trim(),
         });
