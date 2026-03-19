@@ -258,7 +258,6 @@ export function Chatbot() {
 
   const quickActions = [
     { icon: MenuIcon, label: { fr: 'Menu', en: 'Menu' }, action: () => { navigate('/menu'); setIsOpen(false); } },
-    { icon: Sparkles, label: { fr: 'Suggestions', en: 'Suggestions' }, action: () => handleSend('Peux-tu me suggérer un cocktail ?') },
     { icon: Sparkles, label: { fr: 'Sur mesure', en: 'Custom' }, action: () => handleSend('Je veux un cocktail sur mesure !') },
     { icon: MapPin, label: { fr: 'Localisation', en: 'Location' }, action: () => window.open('https://maps.google.com/?q=1309+Rue+Saint-Zotique+Est,+Montréal', '_blank') },
     { icon: Car, label: { fr: 'Taxi / Uber', en: 'Taxi / Uber' }, action: () => window.open('https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=1309%20Rue%20Saint-Zotique%20Est%2C%20Montr%C3%A9al', '_blank') },
