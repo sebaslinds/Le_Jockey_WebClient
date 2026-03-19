@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus, CreditCard, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { supabase } from '../supabaseClient';
+import { menuItems } from '../data/menu';
 
 export function CartDrawer() {
   const { cart, isCartOpen, setCartOpen, removeFromCart, updateQuantity, clearCart, language } = useStore();
@@ -31,7 +32,9 @@ export function CartDrawer() {
 
   const handleCheckout = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!customerName.trim()) return;
+    
+    const trimmedName = customerName.trim();
+    if (!trimmedName) return;
 
     setIsCheckingOut(true);
     
@@ -47,7 +50,7 @@ export function CartDrawer() {
           total_amount: total,
           status: 'New',
           contact_email: null,
-          customer_name: customerName.trim(),
+          customer_name: trimmedName,
         });
 
       if (orderError) throw orderError;
@@ -168,6 +171,7 @@ export function CartDrawer() {
                       required
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
+                      onBlur={() => setCustomerName(customerName.trim())}
                       placeholder={t.namePlaceholder[language]}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
                     />
@@ -216,25 +220,36 @@ export function CartDrawer() {
                   ) : (
                     cart.map((item) => {
                       const itemKey = `${item.id}-${item.alcohol_portion || 'none'}-${item.flavor_profile || 'none'}-${item.alcohol_choice || 'none'}`;
+                      const menuItem = menuItems.find(m => m.id === item.id);
+                      const description = menuItem?.description;
+                      
                       return (
                       <div key={itemKey} className="flex gap-4 items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                         <div className="flex-1">
                           <h3 className="font-medium text-zinc-100">
                             {typeof item.name === 'string' ? item.name : item.name[language]}
                           </h3>
+                          
+                          {description && !item.flavor_profile && !item.alcohol_choice && (
+                            <p className="text-xs text-zinc-400 mt-0.5 italic">
+                              {description}
+                            </p>
+                          )}
+                          
+                          {(item.flavor_profile || item.alcohol_choice) && (
+                            <div className="text-xs text-zinc-400 mt-1 space-y-0.5">
+                              {item.alcohol_choice && (
+                                <p><span className="text-zinc-500">{language === 'fr' ? 'Alcool :' : 'Alcohol:'}</span> {item.alcohol_choice}</p>
+                              )}
+                              {item.flavor_profile && (
+                                <p><span className="text-zinc-500">{language === 'fr' ? 'Profil :' : 'Profile:'}</span> {item.flavor_profile}</p>
+                              )}
+                            </div>
+                          )}
+
                           {item.alcohol_portion && (
                             <p className="text-xs text-zinc-400 mt-0.5">
-                              Portion: <span className="text-zinc-300 capitalize">{item.alcohol_portion}</span>
-                            </p>
-                          )}
-                          {item.flavor_profile && (
-                            <p className="text-xs text-zinc-400 mt-0.5">
-                              Goût: <span className="text-zinc-300">{item.flavor_profile}</span>
-                            </p>
-                          )}
-                          {item.alcohol_choice && (
-                            <p className="text-xs text-zinc-400 mt-0.5">
-                              Alcool: <span className="text-zinc-300">{item.alcohol_choice}</span>
+                              <span className="text-zinc-500">{language === 'fr' ? 'Portion :' : 'Portion:'}</span> <span className="capitalize">{item.alcohol_portion}</span>
                             </p>
                           )}
                           <p className="text-amber-500 font-mono mt-1">${item.price.toFixed(2)}</p>

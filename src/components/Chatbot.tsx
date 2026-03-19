@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, MapPin, Car, Calendar, ShoppingBag, Menu as MenuIcon, ShoppingCart, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, MapPin, Car, Calendar, ShoppingBag, Menu as MenuIcon, ShoppingCart, Sparkles, Plus, Minus } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import Markdown from 'react-markdown';
 import { useStore } from '../store/useStore';
@@ -30,15 +30,21 @@ CHOICES: ["Option 1", "Option 2", "Option 3"]
 RÈGLE ABSOLUE POUR LES CHOIX : Chaque option dans la liste CHOICES ne doit JAMAIS dépasser 2 ou 3 mots. C'est très important. Par exemple, au lieu de "Je veux quelque chose de fruité", utilise "Fruité 🍓". Ne propose JAMAIS de choix "Commander" ou "Payer".
 Au tout début de la conversation, ou si le client te salue, propose UNIQUEMENT les choix "Menu" et "Sur mesure".
 
-COMMANDE DE COCKTAIL : Si le client sélectionne ou demande un cocktail spécifique (y compris un sur mesure), tu DOIS lui demander combien d'unités il souhaite commander. Propose-lui des choix comme "1", "2", "3", "4" après que le choix de palette et la sorte d'alccol soit fait dans le cas d'un cocktail sur mesure.
-TRÈS IMPORTANT: Si le client commande PLUSIEURS cocktails du même type (ex: 3 cocktails), tu DOIS lui demander s'il veut un mélange de portions "simple" et "double" (ex: "Veux-tu 1 simple et 2 doubles, ou tous pareils ?").
-Une fois que le client a confirmé la quantité, le cocktail, et la portion d'alcool (dans tous les cas! S'il y a plus d'un item, permettre la sélection pour lequel ou lesquels auront une portion additionnelle.), tu DOIS ajouter l'article au panier. Pour cela, ajoute TOUJOURS à la toute fin de ton message un objet JSON strict comme ceci:
-ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple", "flavor_profile": "Fruité et sucré", "alcohol_choice": "Vodka"}
+COMMANDE DE COCKTAIL : 
+Si tu suggères un ou plusieurs cocktails spécifiques du menu, ajoute TOUJOURS à la toute fin de ton message la liste de leurs IDs au format JSON strict comme ceci:
+SUGGESTIONS: ["id_1", "id_2"]
+Ne gère plus la commande, la quantité ou la portion d'alcool pour les cocktails du menu, car l'utilisateur pourra le faire via l'interface.
+
+Par contre, pour les cocktails SUR MESURE, tu dois continuer à gérer la commande (quantité, portion) et utiliser ADD_TO_CART.
+Si le client commande un cocktail sur mesure, tu DOIS lui demander combien d'unités il souhaite commander. Propose-lui des choix comme "1", "2", "3", "4" après que le choix de palette et la sorte d'alccol soit fait.
+TRÈS IMPORTANT: Si le client commande PLUSIEURS cocktails sur mesure du même type (ex: 3 cocktails), tu DOIS lui demander s'il veut un mélange de portions "simple" et "double" (ex: "Veux-tu 1 simple et 2 doubles, ou tous pareils ?").
+Une fois que le client a confirmé la quantité, le cocktail sur mesure, et la portion d'alcool (dans tous les cas! S'il y a plus d'un item, permettre la sélection pour lequel ou lesquels auront une portion additionnelle.), tu DOIS ajouter l'article au panier. Pour cela, ajoute TOUJOURS à la toute fin de ton message un objet JSON strict comme ceci:
+ADD_TO_CART: {"id": "custom-123", "name": "Nom du cocktail", "price": 16, "quantity": 2, "type": "menu", "alcohol_portion": "simple", "flavor_profile": "Fruité et sucré", "alcohol_choice": "Vodka"}
 (Les attributs "alcohol_portion", "flavor_profile" et "alcohol_choice" ne doivent être ajoutés que si c'est un cocktail sur mesure).
-Si le client commande plusieurs portions différentes pour le même cocktail (ex: 4 cocktails, dont 2 simples et 2 doubles), tu DOIS générer PLUSIEURS lignes ADD_TO_CART séparées. Par exemple:
-ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple"}
-ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 18, "quantity": 2, "type": "menu", "alcohol_portion": "double"}
-Assure-toi de trouver le bon "id" et "price" dans le menu fourni, ou d'inventer un id (ex: "custom-123") et de fixer un prix de 16 pour un cocktail sur mesure.
+Si le client commande plusieurs portions différentes pour le même cocktail sur mesure (ex: 4 cocktails, dont 2 simples et 2 doubles), tu DOIS générer PLUSIEURS lignes ADD_TO_CART séparées. Par exemple:
+ADD_TO_CART: {"id": "custom-123", "name": "Nom du cocktail", "price": 16, "quantity": 2, "type": "menu", "alcohol_portion": "simple", "flavor_profile": "Fruité", "alcohol_choice": "Vodka"}
+ADD_TO_CART: {"id": "custom-123", "name": "Nom du cocktail", "price": 19, "quantity": 2, "type": "menu", "alcohol_portion": "double", "flavor_profile": "Fruité", "alcohol_choice": "Vodka"}
+Assure-toi d'inventer un id (ex: "custom-123") et de fixer un prix de 16 pour un cocktail sur mesure.
 APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Sur mesure".
 Si l'utilisateur demande à voir le menu ou clique sur "Menu", propose-lui TOUJOURS les catégories suivantes en choix: "Cocktails Jockey Vintage", "Caesars Signatures", "Cocktails Classiques" (ou en anglais: "Vintage Jockey Cocktails", "Signature Caesars", "Classic Cocktails").
 `;
@@ -59,7 +65,7 @@ export function Chatbot() {
   };
 
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; choices?: string[] }[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; choices?: string[]; suggestions?: string[] }[]>([
     { 
       role: 'model', 
       text: initialMessage[language].text,
@@ -68,6 +74,8 @@ export function Chatbot() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [quantity, setQuantity] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<any>(null);
 
@@ -112,6 +120,36 @@ export function Chatbot() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isOpen]);
+
+  const openOrderModal = (item: any) => {
+    setSelectedItem(item);
+    setQuantity(1);
+  };
+
+  const handleAddToCart = (portion: 'simple' | 'double') => {
+    if (!selectedItem) return;
+    
+    addToCart({
+      id: selectedItem.id,
+      name: selectedItem.name,
+      price: portion === 'double' ? selectedItem.price + 3 : selectedItem.price,
+      quantity: quantity,
+      type: 'menu',
+      alcohol_portion: portion
+    });
+    
+    setSelectedItem(null);
+    setMessages((prev) => [
+      ...prev,
+      { 
+        role: 'model', 
+        text: language === 'fr' 
+          ? `Parfait ! J'ai ajouté ${quantity}x ${selectedItem.name} (${portion}) à ton panier.` 
+          : `Perfect! I've added ${quantity}x ${selectedItem.name} (${portion}) to your cart.`,
+        choices: language === 'fr' ? ['Menu', 'Sur mesure'] : ['Menu', 'Custom']
+      }
+    ]);
+  };
 
   const handleSend = async (text: string = input) => {
     if (!text.trim()) return;
@@ -165,6 +203,7 @@ export function Chatbot() {
       
       let responseText = response.text || (language === 'fr' ? 'Désolé, j\'ai eu un petit bug !' : 'Sorry, I had a little bug!');
       let choices: string[] = [];
+      let suggestions: string[] = [];
       
       const choicesMatch = responseText.match(/CHOICES:\s*(\[.*?\])/s);
       if (choicesMatch) {
@@ -173,6 +212,16 @@ export function Chatbot() {
           responseText = responseText.replace(choicesMatch[0], '').trim();
         } catch (e) {
           console.error('Failed to parse choices', e);
+        }
+      }
+
+      const suggestionsMatch = responseText.match(/SUGGESTIONS:\s*(\[.*?\])/s);
+      if (suggestionsMatch) {
+        try {
+          suggestions = JSON.parse(suggestionsMatch[1]);
+          responseText = responseText.replace(suggestionsMatch[0], '').trim();
+        } catch (e) {
+          console.error('Failed to parse suggestions', e);
         }
       }
 
@@ -198,7 +247,7 @@ export function Chatbot() {
       responseText = responseText.replace(/ADD_TO_CART:\s*(?:```(?:json)?\s*)?\{.*?\}(?:\s*```)?/g, '').trim();
       responseText = responseText.replace(/ADD_TO_CART:.*$/gm, '').trim();
       
-      setMessages((prev) => [...prev, { role: 'model', text: responseText, choices }]);
+      setMessages((prev) => [...prev, { role: 'model', text: responseText, choices, suggestions }]);
     } catch (error) {
       console.error('Chatbot error:', error);
       setMessages((prev) => [...prev, { role: 'model', text: language === 'fr' ? 'Oups, le barman a renversé son verre sur mon serveur. Réessaie plus tard !' : 'Oops, the bartender spilled his drink on my server. Try again later!' }]);
@@ -281,6 +330,28 @@ export function Chatbot() {
                       ))}
                     </div>
                   )}
+                  {msg.suggestions && msg.suggestions.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-2 w-full max-w-[85%]">
+                      {msg.suggestions.map((id, j) => {
+                        const item = menuItems.find(m => m.id === id);
+                        if (!item) return null;
+                        return (
+                          <div key={j} className="bg-zinc-800 border border-zinc-700 rounded-xl p-3 flex justify-between items-center gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-bold text-zinc-100 truncate">{item.name}</h4>
+                              <p className="text-xs text-amber-500 font-mono">${item.price.toFixed(2)}</p>
+                            </div>
+                            <button
+                              onClick={() => openOrderModal(item)}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              {language === 'fr' ? 'Commander' : 'Order'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
               {isLoading && (
@@ -344,6 +415,71 @@ export function Chatbot() {
               </form>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Portion Selection Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+              
+              <h3 className="text-2xl font-serif text-amber-500 mb-2">{selectedItem.name}</h3>
+              
+              {/* Quantity Selector */}
+              <div className="mb-6 flex items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                <span className="text-zinc-300">{language === 'fr' ? 'Quantité :' : 'Quantity:'}</span>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="font-mono text-lg w-4 text-center">{quantity}</span>
+                  <button 
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-zinc-300 mb-4">
+                {language === 'fr' ? 'Choisissez votre portion :' : 'Choose your portion:'}
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleAddToCart('simple')}
+                  className="w-full flex justify-between items-center p-4 rounded-xl border border-zinc-700 hover:border-amber-500 hover:bg-amber-500/10 transition-all group"
+                >
+                  <span className="font-bold text-zinc-100 group-hover:text-amber-500">Simple</span>
+                  <span className="font-mono text-zinc-400">${(selectedItem.price * quantity).toFixed(2)}</span>
+                </button>
+                
+                <button
+                  onClick={() => handleAddToCart('double')}
+                  className="w-full flex justify-between items-center p-4 rounded-xl border border-zinc-700 hover:border-amber-500 hover:bg-amber-500/10 transition-all group"
+                >
+                  <span className="font-bold text-zinc-100 group-hover:text-amber-500">Double (+3$)</span>
+                  <span className="font-mono text-zinc-400">${((selectedItem.price + 3) * quantity).toFixed(2)}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>
