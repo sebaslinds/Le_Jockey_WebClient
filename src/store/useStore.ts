@@ -10,6 +10,8 @@ export interface CartItem {
   quantity: number;
   type: 'menu' | 'shop';
   alcohol_portion?: 'simple' | 'double';
+  flavor_profile?: string;
+  alcohol_choice?: string;
 }
 
 interface AppState {
@@ -32,23 +34,36 @@ export const useStore = create<AppState>()(
       cart: [],
       addToCart: (item) =>
         set((state) => {
-          const existing = state.cart.find((i) => i.id === item.id);
+          const getCartItemKey = (i: CartItem) => 
+            `${i.id}-${i.alcohol_portion || 'none'}-${i.flavor_profile || 'none'}-${i.alcohol_choice || 'none'}`;
+          
+          const itemKey = getCartItemKey(item);
+          const existing = state.cart.find((i) => getCartItemKey(i) === itemKey);
+          
           if (existing) {
             return {
               cart: state.cart.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
+                getCartItemKey(i) === itemKey ? { ...i, quantity: i.quantity + item.quantity } : i
               ),
               isCartOpen: true,
             };
           }
           return { cart: [...state.cart, item], isCartOpen: true };
         }),
-      removeFromCart: (id) =>
-        set((state) => ({ cart: state.cart.filter((i) => i.id !== id) })),
-      updateQuantity: (id, quantity) =>
-        set((state) => ({
-          cart: state.cart.map((i) => (i.id === id ? { ...i, quantity } : i)),
-        })),
+      removeFromCart: (itemKeyToRemove) =>
+        set((state) => {
+          const getCartItemKey = (i: CartItem) => 
+            `${i.id}-${i.alcohol_portion || 'none'}-${i.flavor_profile || 'none'}-${i.alcohol_choice || 'none'}`;
+          return { cart: state.cart.filter((i) => getCartItemKey(i) !== itemKeyToRemove) };
+        }),
+      updateQuantity: (itemKeyToUpdate, quantity) =>
+        set((state) => {
+          const getCartItemKey = (i: CartItem) => 
+            `${i.id}-${i.alcohol_portion || 'none'}-${i.flavor_profile || 'none'}-${i.alcohol_choice || 'none'}`;
+          return {
+            cart: state.cart.map((i) => (getCartItemKey(i) === itemKeyToUpdate ? { ...i, quantity } : i)),
+          };
+        }),
       clearCart: () => set({ cart: [] }),
       isCartOpen: false,
       setCartOpen: (isOpen) => set({ isCartOpen: isOpen }),

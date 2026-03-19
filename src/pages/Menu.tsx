@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 import { menuItems, menuCategories } from '../data/menu';
 import { useStore } from '../store/useStore';
 
 export function Menu() {
   const { language, addToCart } = useStore();
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeCategory, setActiveCategory] = useState<string>(searchParams.get('category') || 'all');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category && menuCategories.some(c => c.id === category)) {
+      setActiveCategory(category);
+    } else if (!category) {
+      setActiveCategory('all');
+    }
+  }, [searchParams]);
+
+  const handleCategoryChange = (categoryId: string) => {
+    setActiveCategory(categoryId);
+    if (categoryId === 'all') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', categoryId);
+    }
+    setSearchParams(searchParams);
+  };
 
   const toggleFlip = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,7 +63,7 @@ export function Menu() {
       {/* Categories */}
       <div className="flex flex-wrap gap-2 mb-12">
         <button
-          onClick={() => setActiveCategory('all')}
+          onClick={() => handleCategoryChange('all')}
           className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
             activeCategory === 'all' 
               ? 'bg-amber-500 text-zinc-950' 
@@ -54,7 +75,7 @@ export function Menu() {
         {menuCategories.map(cat => (
           <button
             key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
+            onClick={() => handleCategoryChange(cat.id)}
             className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
               activeCategory === cat.id 
                 ? 'bg-amber-500 text-zinc-950' 

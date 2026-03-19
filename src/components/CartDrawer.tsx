@@ -76,7 +76,9 @@ export function CartDrawer() {
           item_name: itemName,
           quantity: item.quantity,
           unit_price: item.price,
-          alcohol_portion: item.alcohol_portion || null
+          alcohol_portion: item.alcohol_portion || null,
+          flavor_profile: item.flavor_profile || null,
+          alcohol_choice: item.alcohol_choice || null
         };
       });
 
@@ -212,8 +214,10 @@ export function CartDrawer() {
                       <p>{t.empty[language]}</p>
                     </div>
                   ) : (
-                    cart.map((item) => (
-                      <div key={item.id} className="flex gap-4 items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                    cart.map((item) => {
+                      const itemKey = `${item.id}-${item.alcohol_portion || 'none'}-${item.flavor_profile || 'none'}-${item.alcohol_choice || 'none'}`;
+                      return (
+                      <div key={itemKey} className="flex gap-4 items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                         <div className="flex-1">
                           <h3 className="font-medium text-zinc-100">
                             {typeof item.name === 'string' ? item.name : item.name[language]}
@@ -223,12 +227,22 @@ export function CartDrawer() {
                               Portion: <span className="text-zinc-300 capitalize">{item.alcohol_portion}</span>
                             </p>
                           )}
+                          {item.flavor_profile && (
+                            <p className="text-xs text-zinc-400 mt-0.5">
+                              Goût: <span className="text-zinc-300">{item.flavor_profile}</span>
+                            </p>
+                          )}
+                          {item.alcohol_choice && (
+                            <p className="text-xs text-zinc-400 mt-0.5">
+                              Alcool: <span className="text-zinc-300">{item.alcohol_choice}</span>
+                            </p>
+                          )}
                           <p className="text-amber-500 font-mono mt-1">${item.price.toFixed(2)}</p>
                         </div>
                         
                         <div className="flex items-center gap-3 bg-zinc-950 rounded-lg p-1 border border-zinc-800">
                           <button 
-                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            onClick={() => updateQuantity(itemKey, Math.max(1, item.quantity - 1))}
                             className="p-1 text-zinc-400 hover:text-white"
                             disabled={isCheckingOut}
                           >
@@ -236,7 +250,7 @@ export function CartDrawer() {
                           </button>
                           <span className="w-4 text-center text-sm">{item.quantity}</span>
                           <button 
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(itemKey, item.quantity + 1)}
                             className="p-1 text-zinc-400 hover:text-white"
                             disabled={isCheckingOut}
                           >
@@ -245,14 +259,15 @@ export function CartDrawer() {
                         </div>
                         
                         <button 
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(itemKey)}
                           className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
                           disabled={isCheckingOut}
                         >
                           <Trash2 size={18} />
                         </button>
                       </div>
-                    ))
+                    );
+                  })
                   )}
                 </div>
 

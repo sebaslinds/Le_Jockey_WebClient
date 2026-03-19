@@ -18,8 +18,9 @@ Tu peux aider avec :
 - Les événements (Lundis de l'humour, open-mic, etc.)
 - Les informations pratiques (1309 Rue Saint-Zotique Est, Montréal, QC H2G 1G6)
 - Des recommandations de cocktails selon les goûts.
+- Le raccompagnement en taxi ou UBER.
 
-Si on te demande de créer un cocktail sur mesure, commence TOUJOURS par poser des questions sur les goûts (sucré, amer, fort, fruité) pour diriger le client vers une palette de saveurs.
+Si on te demande de créer un cocktail sur mesure, commence TOUJOURS par poser des questions sur les goûts (sucré, amer, fort, fruité) pour diriger le client vers une palette de saveurs. Ensuite, demande la sorte d'alcool (ex.: Vodka, Rhum, Gin, Whiskey, etc)
 TRÈS IMPORTANT POUR LES COCKTAILS SUR MESURE : Ne demande JAMAIS la portion d'alcool ("simple" ou "double") dans la même bulle que les questions sur les goûts. Attends que le profil de saveur soit défini et que la recette soit inventée. Demande s'il souhaite une portion "simple" ou "double" à la toute fin, juste avant de confirmer la commande. C'est obligatoire pour que le barman puisse préparer le verre.
 Garde tes réponses concises et utiles.
 
@@ -27,13 +28,19 @@ IMPORTANT: Tu peux proposer des choix à l'utilisateur sous forme de boutons pou
 CHOICES: ["Option 1", "Option 2", "Option 3"]
 
 RÈGLE ABSOLUE POUR LES CHOIX : Chaque option dans la liste CHOICES ne doit JAMAIS dépasser 2 ou 3 mots. C'est très important. Par exemple, au lieu de "Je veux quelque chose de fruité", utilise "Fruité 🍓". Ne propose JAMAIS de choix "Commander" ou "Payer".
+Au tout début de la conversation, ou si le client te salue, propose UNIQUEMENT les choix "Menu" et "Sur mesure".
 
-COMMANDE DE COCKTAIL : Si le client sélectionne ou demande un cocktail spécifique (y compris un sur mesure), tu DOIS lui demander combien d'unités il souhaite commander. Propose-lui des choix comme "1", "2", "3", "4".
-Une fois que le client a confirmé la quantité, le cocktail, et la portion d'alcool (si c'est un sur mesure), tu DOIS ajouter l'article au panier. Pour cela, ajoute TOUJOURS à la toute fin de ton message un objet JSON strict comme ceci:
+COMMANDE DE COCKTAIL : Si le client sélectionne ou demande un cocktail spécifique (y compris un sur mesure), tu DOIS lui demander combien d'unités il souhaite commander. Propose-lui des choix comme "1", "2", "3", "4" après que le choix de palette et la sorte d'alccol soit fait dans le cas d'un cocktail sur mesure.
+TRÈS IMPORTANT: Si le client commande PLUSIEURS cocktails du même type (ex: 3 cocktails), tu DOIS lui demander s'il veut un mélange de portions "simple" et "double" (ex: "Veux-tu 1 simple et 2 doubles, ou tous pareils ?").
+Une fois que le client a confirmé la quantité, le cocktail, et la portion d'alcool (dans tous les cas! S'il y a plus d'un item, permettre la sélection pour lequel ou lesquels auront une portion additionnelle.), tu DOIS ajouter l'article au panier. Pour cela, ajoute TOUJOURS à la toute fin de ton message un objet JSON strict comme ceci:
+ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple", "flavor_profile": "Fruité et sucré", "alcohol_choice": "Vodka"}
+(Les attributs "alcohol_portion", "flavor_profile" et "alcohol_choice" ne doivent être ajoutés que si c'est un cocktail sur mesure).
+Si le client commande plusieurs portions différentes pour le même cocktail (ex: 4 cocktails, dont 2 simples et 2 doubles), tu DOIS générer PLUSIEURS lignes ADD_TO_CART séparées. Par exemple:
 ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple"}
-(L'attribut "alcohol_portion" peut être "simple" ou "double", et ne doit être ajouté que si c'est un cocktail sur mesure).
-Assure-toi de trouver le bon "id" et "price" dans le menu fourni, ou d'inventer un id (ex: "custom-123") et un prix (ex: 16) pour un cocktail sur mesure.
-APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Autre cocktail", ou "Non, merci".
+ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 18, "quantity": 2, "type": "menu", "alcohol_portion": "double"}
+Assure-toi de trouver le bon "id" et "price" dans le menu fourni, ou d'inventer un id (ex: "custom-123") et de fixer un prix de 16 pour un cocktail sur mesure.
+APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Autre cocktail".
+Si l'utilisateur demande à voir le menu ou clique sur "Menu", propose-lui TOUJOURS les catégories suivantes en choix: "Cocktails Jockey Vintage", "Caesars Signatures", "Cocktails Classiques" (ou en anglais: "Vintage Jockey Cocktails", "Signature Caesars", "Classic Cocktails").
 `;
 
 export function Chatbot() {
@@ -42,10 +49,12 @@ export function Chatbot() {
 
   const initialMessage = {
     fr: {
-      text: 'Salut ! Bienvenue au Jockey. Comment je peux t\'aider aujourd\'hui ? 🍸'
+      text: 'Salut ! Bienvenue au Jockey. Comment je peux t\'aider aujourd\'hui ? 🍸',
+      choices: ['Menu', 'Sur mesure']
     },
     en: {
-      text: 'Hi! Welcome to Le Jockey. How can I help you today? 🍸'
+      text: 'Hi! Welcome to Le Jockey. How can I help you today? 🍸',
+      choices: ['Menu', 'Custom']
     }
   };
 
@@ -53,7 +62,8 @@ export function Chatbot() {
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; choices?: string[] }[]>([
     { 
       role: 'model', 
-      text: initialMessage[language].text
+      text: initialMessage[language].text,
+      choices: initialMessage[language].choices
     }
   ]);
   const [input, setInput] = useState('');
@@ -88,7 +98,8 @@ export function Chatbot() {
       setMessages([
         { 
           role: 'model', 
-          text: initialMessage[language].text
+          text: initialMessage[language].text,
+          choices: initialMessage[language].choices
         }
       ]);
     }
@@ -107,6 +118,41 @@ export function Chatbot() {
 
     const userMsg = text;
     setInput('');
+    
+    // Intercept category choices
+    const lowerText = userMsg.toLowerCase();
+    if (lowerText === 'cocktails jockey vintage' || lowerText === 'vintage jockey cocktails') {
+      navigate('/menu?category=vintage');
+      setIsOpen(false);
+      return;
+    }
+    if (lowerText === 'caesars signatures' || lowerText === 'signature caesars') {
+      navigate('/menu?category=caesars');
+      setIsOpen(false);
+      return;
+    }
+    if (lowerText === 'cocktails classiques' || lowerText === 'classic cocktails') {
+      navigate('/menu?category=classiques');
+      setIsOpen(false);
+      return;
+    }
+
+    // Intercept "Menu" to show categories
+    if (lowerText === 'menu') {
+      setMessages((prev) => [
+        ...prev, 
+        { role: 'user', text: userMsg },
+        { 
+          role: 'model', 
+          text: language === 'fr' ? 'Quelle section du menu aimerais-tu explorer ?' : 'Which section of the menu would you like to explore?',
+          choices: language === 'fr' 
+            ? ['Cocktails Jockey Vintage', 'Caesars Signatures', 'Cocktails Classiques']
+            : ['Vintage Jockey Cocktails', 'Signature Caesars', 'Classic Cocktails']
+        }
+      ]);
+      return;
+    }
+
     setMessages((prev) => [...prev, { role: 'user', text: userMsg }]);
     setIsLoading(true);
 
@@ -130,16 +176,27 @@ export function Chatbot() {
         }
       }
 
-      const addToCartMatch = responseText.match(/ADD_TO_CART:\s*(\{.*?\})/s);
-      if (addToCartMatch) {
-        try {
-          const cartItem = JSON.parse(addToCartMatch[1]);
-          addToCart(cartItem);
-          responseText = responseText.replace(addToCartMatch[0], '').trim();
-        } catch (e) {
-          console.error('Failed to parse cart item', e);
+      const addToCartMatches = [...responseText.matchAll(/ADD_TO_CART:\s*(?:```(?:json)?\s*)?(\{.*?\})(?:\s*```)?/g)];
+      if (addToCartMatches.length > 0) {
+        for (const match of addToCartMatches) {
+          try {
+            // Replace any potential smart quotes or missing commas that might break JSON.parse
+            let jsonStr = match[1]
+              .replace(/[\u201C\u201D]/g, '"')
+              .replace(/[\u2018\u2019]/g, "'")
+              .replace(/"\s+"/g, '", "'); // Fix missing commas between properties
+              
+            const cartItem = JSON.parse(jsonStr);
+            addToCart(cartItem);
+          } catch (e) {
+            console.error('Failed to parse cart item', e);
+          }
         }
       }
+      
+      // Always remove ADD_TO_CART from the text, even if parsing fails
+      responseText = responseText.replace(/ADD_TO_CART:\s*(?:```(?:json)?\s*)?\{.*?\}(?:\s*```)?/g, '').trim();
+      responseText = responseText.replace(/ADD_TO_CART:.*$/gm, '').trim();
       
       setMessages((prev) => [...prev, { role: 'model', text: responseText, choices }]);
     } catch (error) {
