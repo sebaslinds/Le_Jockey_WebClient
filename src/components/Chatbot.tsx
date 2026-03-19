@@ -78,6 +78,29 @@ export function Chatbot() {
   const [quantity, setQuantity] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<any>(null);
+  const chatbotWindowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Don't close if the portion selection modal is open
+      if (selectedItem) return;
+      
+      if (
+        isOpen && 
+        chatbotWindowRef.current && 
+        !chatbotWindowRef.current.contains(event.target as Node) &&
+        // Don't close if clicking the toggle button
+        !(event.target as Element).closest('button[aria-label="Ouvrir le chat"]') &&
+        // Don't close if clicking inside the portion selection modal (handled by selectedItem check above, but just in case)
+        !(event.target as Element).closest('.z-\\[60\\]')
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, selectedItem]);
 
   useEffect(() => {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -279,6 +302,7 @@ export function Chatbot() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={chatbotWindowRef}
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -420,12 +444,16 @@ export function Chatbot() {
       {/* Portion Selection Modal */}
       <AnimatePresence>
         {selectedItem && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div 
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedItem(null)}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelectedItem(null)}
