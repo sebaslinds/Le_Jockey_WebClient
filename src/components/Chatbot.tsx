@@ -39,7 +39,7 @@ Si le client commande plusieurs portions différentes pour le même cocktail (ex
 ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 15, "quantity": 2, "type": "menu", "alcohol_portion": "simple"}
 ADD_TO_CART: {"id": "id_du_cocktail", "name": "Nom du cocktail", "price": 18, "quantity": 2, "type": "menu", "alcohol_portion": "double"}
 Assure-toi de trouver le bon "id" et "price" dans le menu fourni, ou d'inventer un id (ex: "custom-123") et de fixer un prix de 16 pour un cocktail sur mesure.
-APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Autre cocktail".
+APRÈS AVOIR AJOUTÉ AU PANIER : Ne propose JAMAIS les choix "Événements" ou "Horaires". Propose plutôt des choix comme "Menu", "Sur mesure".
 Si l'utilisateur demande à voir le menu ou clique sur "Menu", propose-lui TOUJOURS les catégories suivantes en choix: "Cocktails Jockey Vintage", "Caesars Signatures", "Cocktails Classiques" (ou en anglais: "Vintage Jockey Cocktails", "Signature Caesars", "Classic Cocktails").
 `;
 

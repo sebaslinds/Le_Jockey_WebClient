@@ -22,10 +22,21 @@ export function Layout() {
     setLanguage(language === 'fr' ? 'en' : 'fr');
   };
 
+  React.useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-amber-500/30">
       {/* Header */}
-      <header className="fixed top-0 w-full z-40 bg-transparent">
+      <header className="absolute top-0 w-full z-40 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
           {/* Spacer to keep layout balanced */}

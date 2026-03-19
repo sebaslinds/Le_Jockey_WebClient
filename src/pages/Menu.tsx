@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Info } from 'lucide-react';
+import { Plus, Info, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import { menuItems, menuCategories } from '../data/menu';
@@ -11,6 +11,24 @@ export function Menu() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string>(searchParams.get('category') || 'all');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  const handleAddToCart = (portion: 'simple' | 'double') => {
+    if (!selectedItem) return;
+    
+    const finalPrice = portion === 'double' ? selectedItem.price + 3 : selectedItem.price;
+    addToCart({ 
+      id: selectedItem.id, 
+      name: selectedItem.name, 
+      price: finalPrice, 
+      quantity: 1, 
+      type: 'menu',
+      alcohol_portion: portion
+    });
+    
+    toast.success(language === 'fr' ? `${selectedItem.name} ajouté au panier` : `${selectedItem.name} added to cart`);
+    setSelectedItem(null);
+  };
 
   useEffect(() => {
     const category = searchParams.get('category');
@@ -130,8 +148,7 @@ export function Menu() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1, type: 'menu' });
-                        toast.success(language === 'fr' ? `${item.name} ajouté au panier` : `${item.name} added to cart`);
+                        setSelectedItem(item);
                       }}
                       className="w-10 h-10 bg-amber-500 text-zinc-950 rounded-full flex items-center justify-center hover:bg-amber-400 transition-colors shadow-lg"
                       aria-label={t.add[language]}
@@ -159,6 +176,50 @@ export function Menu() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Portion Selection Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+              
+              <h3 className="text-2xl font-serif text-amber-500 mb-2">{selectedItem.name}</h3>
+              <p className="text-zinc-300 mb-6">
+                {language === 'fr' ? 'Choisissez votre portion :' : 'Choose your portion:'}
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleAddToCart('simple')}
+                  className="w-full flex justify-between items-center p-4 rounded-xl border border-zinc-700 hover:border-amber-500 hover:bg-amber-500/10 transition-all group"
+                >
+                  <span className="font-bold text-zinc-100 group-hover:text-amber-500">Simple</span>
+                  <span className="font-mono text-zinc-400">${selectedItem.price.toFixed(2)}</span>
+                </button>
+                
+                <button
+                  onClick={() => handleAddToCart('double')}
+                  className="w-full flex justify-between items-center p-4 rounded-xl border border-zinc-700 hover:border-amber-500 hover:bg-amber-500/10 transition-all group"
+                >
+                  <span className="font-bold text-zinc-100 group-hover:text-amber-500">Double (+3$)</span>
+                  <span className="font-mono text-zinc-400">${(selectedItem.price + 3).toFixed(2)}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
