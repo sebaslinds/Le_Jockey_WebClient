@@ -39,21 +39,22 @@ export function CartDrawer() {
     setIsCheckingOut(true);
     
     try {
-      const orderId = crypto.randomUUID();
-      
       // 1. Create the order
-      const { error: orderError } = await supabase
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          id: orderId,
           user_id: null,
           total_amount: total,
           status: 'New',
           contact_email: null,
           customer_name: trimmedName,
-        });
+        })
+        .select()
+        .single();
 
       if (orderError) throw orderError;
+      
+      const orderId = orderData.id;
 
       // 2. Create order items
       const isValidUUID = (uuid: string) => 
@@ -72,16 +73,24 @@ export function CartDrawer() {
         const itemId = isValidUUID(item.id) ? item.id : stringToUuid(item.id);
         const itemName = typeof item.name === 'string' ? item.name : item.name.fr;
 
+        // Note: flavor_profile and alcohol_choice are not in the schema, so we omit them
+        // or we could append them to the item_name if they exist
+        const extraInfo = [];
+        if (item.flavor_profile) extraInfo.push(item.flavor_profile);
+        if (item.alcohol_choice) extraInfo.push(item.alcohol_choice);
+        
+        const finalItemName = extraInfo.length > 0 
+          ? `${itemName} (${extraInfo.join(', ')})`
+          : itemName;
+
         return {
           order_id: orderId,
           item_type: item.type || 'menu',
           item_id: itemId,
-          item_name: itemName,
+          item_name: finalItemName,
           quantity: item.quantity,
           unit_price: item.price,
-          alcohol_portion: item.alcohol_portion || null,
-          flavor_profile: item.flavor_profile || null,
-          alcohol_choice: item.alcohol_choice || null
+          alcohol_portion: item.alcohol_portion || null
         };
       });
 
