@@ -67,15 +67,12 @@ export function Menu() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-zinc-800 pb-8 gap-6">
-        <div>
-          <h1 className="text-5xl md:text-6xl font-serif text-amber-500 mb-4">{t.title[language]}</h1>
-          <p className="text-zinc-400 max-w-xl">
-            {language === 'fr' 
-              ? 'Découvrez nos créations signatures, nos classiques revisités et nos inspirations du moment.'
-              : 'Discover our signature creations, reimagined classics, and current inspirations.'}
-          </p>
-        </div>
+      {/* Menu Header Banner */}
+      <div 
+        className="w-full h-48 md:h-64 lg:h-80 rounded-2xl mb-12 bg-cover bg-center bg-no-repeat border border-zinc-800"
+        style={{ backgroundImage: "url('/menu-bg.jpg')" }}
+      >
+        {/* The image itself contains the word "MENU", so we remove the text title and description */}
       </div>
 
       {/* Categories */}
